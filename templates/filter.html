@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+<head>
+    <title>Filter Records</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{url_for('static', filename='logo.png')}}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0px 0px 20px 0px rgba(0,0,0,0.1);
+            color: black;
+        }
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 30px;
+            margin: 0 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mb-4 mt-4">
+        <div class="row">
+            <div>
+                <h2 class="text-center mb-4">Filter Records</h2>
+                <form id="filter-form">
+                    <div class="input-group mb-3">
+                        <select class="form-select" name="table" id="table-select">
+                            <option value="">Select Table</option>
+                            <option value="EB_Redemption_Details">EB Redemption Details</option>
+                            <option value="EB_Purchase_Details">EB Purchase Details</option>
+                        </select>
+                        <select class="form-select" name="attribute" id="attribute-select">
+                            <option value="">Select Attribute</option>
+                        </select>
+                        <input type="text" class="form-control" placeholder="Search Term" name="search_term" id="search-term" required>
+                        <button class="btn btn-primary" type="submit">Search</button>
+                    </div>
+                </form>
+                <br>
+                <div id="search-results"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('table-select').addEventListener('change', function() {
+            var table = this.value;
+            var attributes = {
+                "EB_Redemption_Details": ["Date_of_Encashment", "Name_of_the_Political_Party", "Account_no_of_Political_Party", "Prefix", "Bond_Number", "Denominations", "Pay_Branch_Code", "Pay_Teller"],
+                "EB_Purchase_Details": ["Reference_No_(URN)", "Journal_Date", "Date_of_Purchase", "Date_of_Expiry", "Name_of_the_Purchaser", "Prefix", "Bond_Number", "Denominations", "Issue_Branch_Code", "Issue_Teller"]
+            };
+            var attributeSelect = document.getElementById('attribute-select');
+            attributeSelect.innerHTML = '<option value="">Select Attribute</option>';
+            if (table in attributes) {
+                attributes[table].forEach(function(attribute) {
+                    var option = document.createElement('option');
+                    option.value = attribute;
+                    option.textContent = attribute;
+                    attributeSelect.appendChild(option);
+                });
+            }
+        });
+
+        document.getElementById('filter-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var table = document.getElementById('table-select').value;
+            var attribute = document.getElementById('attribute-select').value;
+            var searchTerm = document.getElementById('search-term').value;
+            if (table && attribute && searchTerm) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', '/filter_results?table=' + table + '&attribute=' + attribute + '&search_term=' + searchTerm, true);
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        document.getElementById('search-results').innerHTML = xhr.responseText;
+                    }
+                };
+                xhr.send();
+            }
+        });
+    </script>
+</body>
+</html>

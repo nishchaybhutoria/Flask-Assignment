@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+<head>
+    <title>Bond Purchase Data</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{url_for('static', filename='logo.png')}}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            padding: 10px 20px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0px 0px 20px 0px rgba(0,0,0,0.1);
+            color: black;
+        }
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 30px;
+            margin: 0 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        #chart-container {
+            margin-top: 20px;
+            width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mb-4 mt-4">
+        <div class="row">
+            <div>
+                <h2 class="text-center mb-4">Bond Purchases</h2>
+                <form id="filter-form">
+                    <div class="input-group mb-3">
+                        <select class="form-select" name="company" id="company-select">
+                            <option value="">Select Company/Individual</option>
+                            <!-- Companies/Individuals options will be populated here -->
+                        </select>
+                        <button class="btn btn-primary" type="submit">Submit</button>
+                    </div>
+                </form>
+                <br>
+                <div id="search-results"></div>
+                <div id="chart-container">
+                    <canvas id="myChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch companies/individuals for dropdown
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    var companies = JSON.parse(xhr.responseText);
+                    var companySelect = document.getElementById('company-select');
+                    companies.forEach(function(company) {
+                        var option = document.createElement('option');
+                        option.value = company;
+                        option.textContent = company;
+                        companySelect.appendChild(option);
+                    });
+                }
+            };
+            xhr.open('GET', '/get_companies', true);
+            xhr.send();
+
+            document.getElementById('filter-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+                var company = document.getElementById('company-select').value;
+                if (company) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState == 4 && xhr.status == 200) {
+                            document.getElementById('search-results').innerHTML = xhr.responseText;
+                        }
+                    };
+                    xhr.open('GET', '/filter_results?company=' + company, true);
+                    xhr.send();
+                    
+                    // Fetch data for the chart
+                    var chartXHR = new XMLHttpRequest();
+                    chartXHR.onreadystatechange = function() {
+                        if (chartXHR.readyState == 4 && chartXHR.status == 200) {
+                            var data = JSON.parse(chartXHR.responseText);
+                            updateChart(data);
+                        }
+                    };
+                    chartXHR.open('GET', '/bond_purchases_data?company=' + company, true);
+                    chartXHR.send();
+                }
+            });
+        });
+
+        function updateChart(data) {
+            var ctx = document.getElementById('myChart').getContext('2d');
+            var labels = Object.keys(data);
+            var numberOfBonds = labels.map(function(year) { return data[year].numberOfBonds; });
+            var totalValueOfBonds = labels.map(function(year) { return data[year].totalValueOfBonds; });
+
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Bonds',
+                        data: numberOfBonds,
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: 'Total Value of Bonds',
+                        data: totalValueOfBonds,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
